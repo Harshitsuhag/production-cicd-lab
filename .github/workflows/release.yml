@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - run: |
+          VERSION=$(cat version.txt)
+          echo "Current: $VERSION"
+          echo "1.0.$GITHUB_RUN_NUMBER" > version.txt
+
+      - run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add version.txt
+          git commit -m "Update version"
+          git tag v1.0.${{ github.run_number }}
+          git push --tags
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v1.0.${{ github.run_number }}

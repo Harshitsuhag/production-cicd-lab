@@ -1,0 +1,26 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency: staging-deploy
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: build-artifact
+
+      - run: docker build -t staging-latest .
+
+      - run: docker run -d -p 3000:3000 staging-latest
+
+      - run: |
+          sleep 5
+          curl -f http://localhost:3000 || exit 1

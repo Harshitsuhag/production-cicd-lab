@@ -1,0 +1,43 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16, 18]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}
+
+      - uses: ./.github/actions/setup-env
+
+      - run: npm test -- --coverage
+
+      - run: |
+          COVERAGE=$(grep -Po 'All files[^|]*\|\s*\K\d+' coverage/lcov-report/index.html)
+          if [ "$COVERAGE" -lt 80 ]; then
+            echo "Coverage below 80%"
+            exit 1
+          fi
+
+      - run: docker build -t app-build .
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: build-artifact
+          path: .
