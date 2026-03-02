@@ -16,13 +16,13 @@ jobs:
       name: production
 
     steps:
-      # 1️⃣ Checkout with full history (important for tags)
+      # 1️⃣ Checkout full repo history
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # 2️⃣ Read and increment version safely
+      # 2️⃣ Increment version safely
       - name: Increment version
         run: |
           VERSION=$(tr -d '\r\n' < version.txt)
@@ -35,16 +35,19 @@ jobs:
           echo "$NEW_VERSION" > version.txt
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
-      # 3️⃣ Commit version update
+      # 3️⃣ Commit and rebase before push
       - name: Commit version update
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
+
           git add version.txt
           git commit -m "Update version to $NEW_VERSION [skip ci]" || echo "No changes"
+
+          git pull --rebase origin main
           git push origin main
 
-      # 4️⃣ Create tag safely
+      # 4️⃣ Create annotated tag
       - name: Create Git tag
         run: |
           git tag -a v$NEW_VERSION -m "Release v$NEW_VERSION"
