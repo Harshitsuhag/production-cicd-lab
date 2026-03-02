@@ -5,7 +5,6 @@ on:
     branches:
       - main
 
-# 🔐 VERY IMPORTANT (fixes 403 error)
 permissions:
   contents: write
 
@@ -13,25 +12,16 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
-    # 🔒 Production Approval Gate
     environment:
       name: production
 
     steps:
-      # 1️⃣ Checkout repository
-      - name: Checkout code
+      # 1️⃣ Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Read current version
-      - name: Read current version
-        id: current_version
-        run: |
-          VERSION=$(cat version.txt)
-          echo "Current version: $VERSION"
-
-      # 3️⃣ Increment patch version
+      # 2️⃣ Increment patch version
       - name: Increment version
-        id: increment
         run: |
           VERSION=$(cat version.txt)
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
@@ -40,22 +30,22 @@ jobs:
           echo $NEW_VERSION > version.txt
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
-      # 4️⃣ Commit updated version
+      # 3️⃣ Commit updated version
       - name: Commit version update
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add version.txt
-          git commit -m "Update version to $NEW_VERSION"
+          git commit -m "Update version to $NEW_VERSION" || echo "No changes to commit"
           git push origin main
 
-      # 5️⃣ Create Git tag
-      - name: Create Git Tag
+      # 4️⃣ Create Git tag
+      - name: Create Git tag
         run: |
           git tag v$NEW_VERSION
           git push origin v$NEW_VERSION
 
-      # 6️⃣ Create GitHub Release
+      # 5️⃣ Create GitHub Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -64,3 +54,4 @@ jobs:
           body: |
             🚀 Production Release
             Version: v${{ env.NEW_VERSION }}
+            Deployed via GitHub Actions
