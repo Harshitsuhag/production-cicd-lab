@@ -1,0 +1,16 @@
+name: Rollback
+
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types:
+      - completed
+
+jobs:
+  rollback:
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - run: echo "Fetching previous release"
+      - run: echo "Redeploy previous image"
