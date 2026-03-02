@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  version-and-release:
+  release:
     runs-on: ubuntu-latest
 
     # 🔒 Production Approval Gate
@@ -18,51 +18,49 @@ jobs:
       name: production
 
     steps:
-      # 1️⃣ Checkout code
-      - name: Checkout Repository
+      # 1️⃣ Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
       # 2️⃣ Read current version
       - name: Read current version
-        id: get_version
+        id: current_version
         run: |
           VERSION=$(cat version.txt)
           echo "Current version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # 3️⃣ Generate new version (Patch increment)
+      # 3️⃣ Increment patch version
       - name: Increment version
-        id: increment_version
+        id: increment
         run: |
           VERSION=$(cat version.txt)
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
           PATCH=$((PATCH + 1))
           NEW_VERSION="$MAJOR.$MINOR.$PATCH"
           echo $NEW_VERSION > version.txt
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
-      # 4️⃣ Commit updated version.txt
+      # 4️⃣ Commit updated version
       - name: Commit version update
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add version.txt
-          git commit -m "Update version to ${{ steps.increment_version.outputs.new_version }}"
+          git commit -m "Update version to $NEW_VERSION"
           git push origin main
 
-      # 5️⃣ Create Git Tag
+      # 5️⃣ Create Git tag
       - name: Create Git Tag
         run: |
-          git tag v${{ steps.increment_version.outputs.new_version }}
-          git push origin v${{ steps.increment_version.outputs.new_version }}
+          git tag v$NEW_VERSION
+          git push origin v$NEW_VERSION
 
       # 6️⃣ Create GitHub Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.increment_version.outputs.new_version }}
-          name: Release v${{ steps.increment_version.outputs.new_version }}
+          tag_name: v${{ env.NEW_VERSION }}
+          name: Release v${{ env.NEW_VERSION }}
           body: |
             🚀 Production Release
-            Version: v${{ steps.increment_version.outputs.new_version }}
-            Deployed via GitHub Actions
+            Version: v${{ env.NEW_VERSION }}
